@@ -1,0 +1,14 @@
+target/
+.idea/
+.vscode/
+*.iml
+*.log
+*.DS_Store
+.mvn/wrapper/maven-wrapper.jar
+**/node_modules/
+.env
+*.swp
+# Docker/K8s
+**/build/
+**/out/
+**/.gradle/
