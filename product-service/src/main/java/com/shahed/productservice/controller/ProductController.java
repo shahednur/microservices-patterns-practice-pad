@@ -2,12 +2,15 @@ package com.shahed.productservice.controller;
 
 import com.shahed.productservice.common.ApiResponse;
 import com.shahed.productservice.entity.Product;
+import com.shahed.productservice.events.OrderCreated;
+import com.shahed.productservice.messaging.KafkaTopics;
 import com.shahed.productservice.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.kafka.core.KafkaTemplate;
 
 import java.util.List;
 
@@ -20,6 +23,7 @@ import java.util.List;
 public class ProductController {
 
     private final ProductService productService;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @PostMapping
     public ResponseEntity<ApiResponse<Product>> createProduct(@RequestBody Product product) {
@@ -49,4 +53,23 @@ public class ProductController {
         productService.deleteProduct(id);
         return ResponseEntity.ok(ApiResponse.ok("Product deleted successfully", null));
     }
+
+    @PostMapping("/test-order")
+    public ResponseEntity<ApiResponse<String>> testOrderEvent(@RequestParam Long orderId,
+            @RequestParam Long sku,
+            @RequestParam Integer quantity) {
+        log.info("Simulating OrderCreated event for orderId={}, sku={}, quantity={}", orderId, sku, quantity);
+
+        OrderCreated event = OrderCreated.builder()
+                .orderId(orderId)
+                .sku(sku.toString()) // since SKU is stored as Product id
+                .quantity(quantity)
+                .build();
+
+        // Send event to ProductEventConsumer via Kafka
+        kafkaTemplate.send(KafkaTopics.ORDER_CREATED, event);
+
+        return ResponseEntity.ok(ApiResponse.ok("Test OrderCreated event sent", null));
+    }
+
 }
